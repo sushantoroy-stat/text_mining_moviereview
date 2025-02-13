@@ -1,0 +1,84 @@
+Text mining
+Dataset Link:
+https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews?select=IMDB+Dataset.csv
+
+# install.packages("tm")         # For text mining
+# install.packages("textclean")  # For text cleaning
+# install.packages("wordcloud")  # For word cloud visualization
+# install.packages("SnowballC")  # For stemming
+# install.packages("ggplot2")    # For data visualization
+
+library(tm) 
+library(textclean) 
+library(wordcloud) 
+library(SnowballC) 
+library(ggplot2)
+
+text_data <- read.csv("IMDB Dataset.csv")
+head(text_data)  # Displays the first few rows of the dataset
+Output:
+
+
+str(text_data)   # Shows the structure of the dataset
+
+
+
+text_column <- text_data$review  # Extract the review column
+corpus1 <- Corpus(VectorSource(text_column))  # Create a corpus (collection of text docs)
+corpus <- VCorpus(VectorSource(text_column))  # Another corpus format
+corpus[[1]]$content  # Displays the first document in the corpus
+is.list(corpus)  # Checks if the corpus is stored as a list
+ 
+
+
+corpus <- tm_map(corpus, content_transformer(tolower))  # Convert text to lowercase
+corpus <- tm_map(corpus, removePunctuation)  # Remove punctuation
+corpus <- tm_map(corpus, removeNumbers)  # Remove numbers
+corpus <- tm_map(corpus, removeWords, stopwords("en"))  # Remove common stopwords
+corpus <- tm_map(corpus, stemDocument)  # Apply stemming (reduce words to their base form)
+corpus <- tm_map(corpus, stripWhitespace)  # Remove extra spaces
+corpus[[1]]$content  # Display the first processed document 
+ 
+dtm <- DocumentTermMatrix(corpus)  # Create the DTM
+inspect(dtm)  # View summary of the DTM
+ 
+library(slam)
+word_freq <- sort(col_sums(dtm), decreasing = FALSE)  # Compute word frequencies
+word_freq_df <- data.frame(term = names(word_freq), frequency = word_freq)  # Convert to data frame
+head(word_freq_df)  # Show the first few rows
+ 
+
+word_freq_df$term <- trimws(word_freq_df$term)  # Trim whitespace
+word_freq_df_sorted <- word_freq_df[order(word_freq_df$frequency, decreasing = TRUE),]  # Sort in descending order
+word_freq_df_sorted  # Display sorted words
+ 
+
+
+top_words  <- head(word_freq_df_sorted, 5)  # Select the top 5 most frequent words
+top_words
+ 
+
+ggplot(top_words, aes(x = reorder(term, frequency), y = frequency)) + 
+  geom_bar(stat = "identity", fill = "steelblue") +  
+    coord_flip() +  
+      theme_minimal() + 
+        labs(x = "Terms", y = "Frequency")
+ 
+
+library(topicmodels)
+lda_model  <-  LDA(dtm, k = 5)  # Apply LDA with 5 topics
+topics <- terms(lda_model, 10)  # Extract top 10 terms per topic
+print(topics)
+ 
+
+
+data_wc  <- head(word_freq_df_sorted, 10000)  # Use the top 10,000 words
+head(data_wc)
+ 
+wordcloud(words = data_wc$term, 
+          freq = data_wc$frequency, 
+          max.words = 1000, 
+          random.order = FALSE, 
+          colors = brewer.pal(8, "Dark2"))
+
+
